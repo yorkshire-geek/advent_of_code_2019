@@ -1,8 +1,41 @@
+from typing import List
+from enum import Enum
+
 input_data = '1,0,0,3,1,1,2,3,1,3,4,3,1,5,0,3,2,1,10,19,1,6,19,23,2,23,6,27,2,6,27,31,2,13,31,35,1,10,35,39,2,39,13,' \
              '43,1,43,13,47,1,6,47,51,1,10,51,55,2,55,6,59,1,5,59,63,2,9,63,67,1,6,67,71,2,9,71,75,1,6,75,79,2,79,13,' \
              '83,1,83,10,87,1,13,87,91,1,91,10,95,2,9,95,99,1,5,99,103,2,10,103,107,1,107,2,111,1,111,5,0,99,2,14,0,0 '
 # input_data_test_1 = '1,9,10,3,2,3,11,0,99,30,40,50'
 input_list = [int(x) for x in input_data.split(',')]
+
+
+class OpCode(Enum):
+    ADDITION = 1
+    MULTIPLY = 2
+    EXIT = 99
+
+
+class Jobber:
+    def __init__(self):
+        self.op_code = None
+        self.param_noun = None
+        self.param_verb = None
+        self.param_address = None
+
+
+class FullData:
+    def __init__(self, list_data: List[int]):
+        self.list_data = list_data
+        self.offset = 0
+
+    def get_current_slice(self) -> Jobber:
+        jobber = Jobber()
+        jobber.op_code = OpCode(self.list_data[self.offset])
+        if jobber.op_code is not OpCode.EXIT:
+            jobber.param_noun = self.list_data[self.offset + 1]
+            jobber.param_verb = self.list_data[self.offset + 2]
+            jobber.param_address = self.list_data[self.offset + 3]
+
+        return jobber
 
 
 class Slice:
