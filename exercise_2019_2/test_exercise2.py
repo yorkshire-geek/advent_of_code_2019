@@ -14,7 +14,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(test_data.get_current_slice().param_noun, 9)
         self.assertEqual(test_data.get_current_slice().param_verb, 10)
         self.assertEqual(test_data.get_current_slice().param_address, 3)
-
+        # print(test)
         #self.assertEqual(test_data.get_current_slice(), Jobber(1, 9, 10, 3))
 
 
