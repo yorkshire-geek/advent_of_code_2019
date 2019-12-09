@@ -24,7 +24,6 @@ class Dag:
             self._dictionary[node] = set()
 
     def get_descendants(self, node) -> set:
-        self._cnt = 1
         result = set()
         self._get_descendants_with_collector(node, result)
         return result
@@ -67,37 +66,9 @@ class Dag:
         return result
 
 
-from utils.objectmother import ObjectMother
-from utils.datawrapper import DataWrapper
-
-class Ex6DataWrapper (DataWrapper):
-
-    @staticmethod
-    def factory(data):
-        return Ex6DataWrapper(data)
-
-    def get_parent(self) -> str:
-        return self.data.split(")")[0]
-
-    def get_child(self) -> str:
-        return self.data.split(")")[1]
-
-
 if __name__ == "__main__":
-    list_of_data = ObjectMother("input.txt").return_list(Ex6DataWrapper.factory)
+    pass
 
-    dag = Dag()
-    for item in list_of_data:
-        dag.add_parent_child(item.get_parent(), item.get_child())
-
-    # Question 1
-    # print("answer: %d" % dag.get_total_orbits("COM"))
-
-    # Question 2
-    you_to_wyd = dag.get_jumps_to_descendant("WYD", "YOU")
-    san_to_wyd = dag.get_jumps_to_descendant("WYD", "SAN")
-
-    print("total number of orbits: %d" % (you_to_wyd + san_to_wyd - 2))
 
 
 # route to YOU: ['TS7', 'SXW', 'G8B', 'PC1', 'BT3', 'QPY', '8TL', 'P49', 'QCH', 'SRY', '19D', '8S4', 'FDG', 'RNW', 'N7H', '9T2', 'XBC', '4PQ', 'VG5', '1PH', '3X9', 'J92', 'JHZ', 'W4T', '4ST', 'MD8', '8C4', 'WQ1', 'CN5', 'F18', 'KXM', 'Y7R', '887', 'NL6', '7R8', '18G', '5L8', 'T79', 'HR6', '1Z9', 'CWB', 'T2P', 'XYD', '5MK', 'DZ2', 'W54', 'K8Q', 'KGF', 'N3J', '19N', 'H7Q', 'BYR', 'D7F', 'V85', 'RPS', 'JC1', 'NPM', '32C', '5V2', '3JS', '4CG', 'TQW', '2RG', 'N2F', 'BBK', 'L2J', 'JGT', 'HDW', 'XJ1', '7SK', 'P31', '7YQ', '9Q3', 'RDR', 'PDW', '1DD', 'N5J', 'T3B', 'X3J', 'S5D', '3BZ', 'KL9', 'CV9', 'NSF', 'HBX', '5G1', 'NRX', 'YZV', '9HZ', 'S9Q', 'QTX', 'NGT', '557', '7RZ', 'RVY', '2BG', '4LC', 'XN3', 'N9T', 'C4Z', 'C62', 'CG5', 'BQZ', 'VTX', 'LS5', '2JS', '5K8', 'LCQ', '12J', 'BTR', 'JW6', 'YBT', 'KDX', 'DYQ', 'Y29', 'WP2', 'RT8', '3VJ', 'YC3', 'SQ9', 'G8N', 'ZDM', 'RDQ', 'KHX', 'Y4L', '9WJ', 'FKM', 'BLW', 'KL5', 'F6J', '1TF', 'SZF', '3KK', '2N2', 'TNP', 'W4M', '9XL', 'B96', 'BWL', 'V2J', 'KLC', 'DLH', '49R', 'JKS', 'PZG', 'SXM', 'S8Z', 'CGY', 'QNP', 'SN2', 'K8P', 'T3K', 'WXT', '37G', 'MQZ', 'WSY', 'X8D', '6CP', '1WF', 'YMR', 'J16', 'YP5', '2V2', '7Z7', 'QW4', '28L', 'QJJ', 'HH8', '513', 'JWB', 'YRF', 'G89', '5K6', 'ZM8', 'NBL', '4PT', '49L', 'J9T', 'V73', '5Z2', '13Z', 'ZQK', 'NW4', 'BR4', 'P99', 'K2C', 'SG1', 'NCH', 'RVR', 'VNM', '74B', 'WYD'

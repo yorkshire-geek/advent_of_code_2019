@@ -1,6 +1,6 @@
+from exercise_2019_6.dag import Dag
 from utils.objectmother import ObjectMother
 from utils.datawrapper import DataWrapper
-from .dag import Dag
 
 
 class Ex6DataWrapper (DataWrapper):
@@ -23,4 +23,11 @@ if __name__ == "__main__":
     for item in list_of_data:
         dag.add_parent_child(item.get_parent(), item.get_child())
 
-    print("answer: %d" % dag.get_jumps_to_descendant("COM"))
+    # Question 1
+    # print("answer: %d" % dag.get_total_orbits("COM"))
+
+    # Question 2
+    you_to_wyd = dag.get_jumps_to_descendant("WYD", "YOU")
+    san_to_wyd = dag.get_jumps_to_descendant("WYD", "SAN")
+
+    print("total number of orbits: %d" % (you_to_wyd + san_to_wyd - 2))
