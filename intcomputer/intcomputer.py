@@ -21,6 +21,10 @@ class IntCodeComputer:
         self.instruction_pointer = 0
         self._auto_mode = auto_mode
         self._input_buffer = []
+        self.finished = False
+        self.debug = False
+        self.suspended = False
+        self.debug_name = ""
 
     def is_not_finished(self) -> bool:
         return self.program_list[self.instruction_pointer] != _EXIT
@@ -149,18 +153,25 @@ class IntCodeComputer:
         self.instruction_pointer += 4
 
     def do_input(self, command):
-        if self._auto_mode:
+
+        if self._auto_mode and not self._input_buffer:  # input buffer empty, go into suspend mode.
+            self.suspended = True
+
+        elif self._auto_mode:
             entered_value = self._get_input()
-            print("auto-mode value entered: [%d]" % entered_value)
+            # if self.debug:
+            #     print("auto-mode value entered: [%d]" % entered_value)
+            self.program_list[command["param1"]] = int(entered_value)
+            self.instruction_pointer += 2
         else:
             entered_value = input("input a value: ")
-
-        self.program_list[command["param1"]] = int(entered_value)
-        self.instruction_pointer += 2
+            self.program_list[command["param1"]] = int(entered_value)
+            self.instruction_pointer += 2
 
     def do_output(self, command):
         output_value = self.program_list[command["param1"]]
-        print("output value: %d " % output_value)
+        # if self.debug:
+        #     print("output value: %d " % output_value)
         self._set_output(output_value)
         self.instruction_pointer += 2
 
@@ -192,12 +203,22 @@ class IntCodeComputer:
 
         self.instruction_pointer += 4
 
+    def resume(self):
+        self.suspended = False
+        self.execute()
+
     def execute(self):
-        while self.is_not_finished():
+        print("start: " + self.debug_name + str(self.program_list))
+        print("buffer:" + str(self._input_buffer))
+        while self.is_not_finished() and not self.suspended:
             frame = self.parse_frame()
             self.run_command(frame)
 
-        print("finished ---")
+        if not self.suspended:
+            self.finished = True
+
+        # print("finished ---") if not self.is_not_finished() else print("suspended ----")
+        print("end: " + self.debug_name + str(self.program_list))
 
 
 if __name__ == "__main__":

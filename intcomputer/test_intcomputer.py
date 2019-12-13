@@ -39,6 +39,12 @@ class MyTestCase(unittest.TestCase):
         computer.run_command(frame)
         self.assertEqual(computer.program_list, [1002,4,3,4,99])
 
+    def test_add_with_mask(self):
+        computer = IntCodeComputer('1001, 5, -4, 5, 99, 0')
+        frame = computer.parse_frame()
+        computer.run_command(frame)
+        self.assertEqual(computer.program_list, [1001, 5, -4, 5, 99, -4])
+
     # Op-code 5 is jump-if-true: if the first parameter is non-zero,
     # it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
     def test_op_code_5(self):
@@ -98,6 +104,19 @@ class MyTestCase(unittest.TestCase):
         computer._set_output(2)
         self.assertEqual(computer.get_output(), 2)
 
+    def test_suspended_flag(self):
+        computer = IntCodeComputer('3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26, 27,4,27,1001,28,-1,28,1005,28,6,99,'
+                                   '0,0,5', True)
+        self.assertEqual(computer.suspended, False)
+        computer.execute()
+        self.assertEqual(computer.suspended, True)
+
+    def test_exit_flag(self):
+        computer = IntCodeComputer('99')
+        self.assertEqual(computer.finished, False)
+        computer.execute()
+        self.assertEqual(computer.finished, True)
+
     def test_equality_in_auto_mode(self):
         #  3,9,8,9,10,9,4,9,99,-1,8 - Using position mode, consider whether the input is equal to 8;
         #  output 1 (if it is) or 0 (if it is not).
@@ -141,8 +160,6 @@ class MyTestCase(unittest.TestCase):
         computer_e.execute()
 
         self.assertEqual(computer_e.get_output(), 43210)
-
-
 
 
 if __name__ == '__main__':
