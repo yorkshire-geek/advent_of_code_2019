@@ -208,8 +208,10 @@ class IntCodeComputer:
         self.execute()
 
     def execute(self):
-        print("start: " + self.debug_name + str(self.program_list))
-        print("buffer:" + str(self._input_buffer))
+        if self.debug:
+            print("start: " + self.debug_name + str(self.program_list))
+            print("buffer:" + str(self._input_buffer))
+
         while self.is_not_finished() and not self.suspended:
             frame = self.parse_frame()
             self.run_command(frame)
@@ -217,8 +219,8 @@ class IntCodeComputer:
         if not self.suspended:
             self.finished = True
 
-        # print("finished ---") if not self.is_not_finished() else print("suspended ----")
-        print("end: " + self.debug_name + str(self.program_list))
+        if self.debug:
+            print("End: " + self.debug_name + str(self.program_list))
 
 
 if __name__ == "__main__":

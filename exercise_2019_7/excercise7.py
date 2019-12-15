@@ -40,7 +40,6 @@ def run_chained_computers_with_feedback(program: str, input_list) -> int:
     computer_c = IntCodeComputer(program, True)
     computer_d = IntCodeComputer(program, True)
     computer_e = IntCodeComputer(program, True)
-    computer_a.debug = True
     output_from_a = _run_chained_computer_with_two_inputs(computer_a, input_list[0], 0)
     output_from_b = _run_chained_computer_with_two_inputs(computer_b, input_list[1], output_from_a)
     output_from_c = _run_chained_computer_with_two_inputs(computer_c, input_list[2], output_from_b)
@@ -49,7 +48,6 @@ def run_chained_computers_with_feedback(program: str, input_list) -> int:
 
     finished = False
     while not finished:
-        # computer_e.debug = True
         output_from_a = _run_chained_computer_with_single_input(computer_a, output_from_e)
         output_from_b = _run_chained_computer_with_single_input(computer_b, output_from_a)
         output_from_c = _run_chained_computer_with_single_input(computer_c, output_from_b)
@@ -58,6 +56,7 @@ def run_chained_computers_with_feedback(program: str, input_list) -> int:
         finished = computer_e.finished
 
     return output_from_e
+
 
 input_program = '3,8,1001,8,10,8,105,1,0,0,21,42,55,76,89,114,195,276,357,438,99999,3,9,1001,9,3,9,1002,9,3,9,1001,9,' \
                 '3,9,1002,9,2,9,4,9,99,3,9,102,2,9,9,101,5,9,9,4,9,99,3,9,102,3,9,9,101,5,9,9,1002,9,2,9,101,4,9,9,4,' \
