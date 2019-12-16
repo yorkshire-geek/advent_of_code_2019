@@ -15,7 +15,7 @@ class MyTestCase(unittest.TestCase):
     def test_simple_add_parse_frame(self):
         computer = IntCodeComputer('1,9,10,3,2,3,11,0,99,30,40,50')
         frame = computer.parse_frame()
-        self.assertEqual(frame, {"op_code": 1, "op_code_mask": "000", "param1": 30, "param2": 40, "param3": 3})
+        self.assertEqual(frame, {"op_code": 1, "param1": 30, "param2": 40, "address": 3})
 
     def test_run_command_add(self):
         computer = IntCodeComputer('1,9,10,3,2,3,11,0,99,30,40,50')
@@ -131,35 +131,39 @@ class MyTestCase(unittest.TestCase):
         computer.execute()
         self.assertEqual(computer.get_output(), 1)
 
-    def test_amp_circuit(self):
-        # input 4, 3, 2, 1, 0
+    def test_op_code_9(self):
+        input_program = '109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99'
+        computer = IntCodeComputer(input_program, True, True)
+        computer.execute()
+        self.assertEqual(computer._output_buffer_history, program_as_list(input_program))
 
-        computer_a = IntCodeComputer('3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0', True)
-        computer_a.add_input(4)
-        computer_a.add_input(0)
-        computer_a.execute()
+    def test_op_code_9_109_209(self):
+        input_program = '9,1,109,2,209,2,99'
+        computer = IntCodeComputer(input_program, True, False)
+        computer.execute()
+        self.assertEqual(computer.relative_base, 5)
 
-        computer_b = IntCodeComputer('3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0', True)
-        computer_b.add_input(3)
-        computer_b.add_input(computer_a.get_output())
-        computer_b.execute()
+    def test_output_large_number(self):
+        computer = IntCodeComputer('1102,34915192,34915192,7,4,7,99,0', True)
+        computer.execute()
+        self.assertEqual(computer.get_output(), 1219070632396864)
 
-        computer_c = IntCodeComputer('3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0', True)
-        computer_c.add_input(2)
-        computer_c.add_input(computer_b.get_output())
-        computer_c.execute()
+    def test_large_output(self):
+        computer = IntCodeComputer('104,1125899906842624,99', True)
+        computer.execute()
+        self.assertEqual(computer.get_output(), 1125899906842624)
 
-        computer_d = IntCodeComputer('3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0', True)
-        computer_d.add_input(1)
-        computer_d.add_input(computer_c.get_output())
-        computer_d.execute()
+    def test_op_code_203(self):
+        computer = IntCodeComputer('109,10,203,0,204,0,99', True, True)
+        computer.add_input(100)
+        computer.execute()
+        self.assertEqual(computer.get_output(), 100)
 
-        computer_e = IntCodeComputer('3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0', True)
-        computer_e.add_input(0)
-        computer_e.add_input(computer_d.get_output())
-        computer_e.execute()
-
-        self.assertEqual(computer_e.get_output(), 43210)
+    # def test_op_code_2106(self):
+    #     computer = IntCodeComputer('2106, 5, 203, 1, 99, 0, 0', True)
+    #     computer.add_input(1)
+    #     computer.execute()
+    #     self.assertEqual(computer.program_list, [109, 5, 203, 1, 99, 0, 1])
 
 
 if __name__ == '__main__':

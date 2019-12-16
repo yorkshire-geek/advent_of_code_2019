@@ -3,11 +3,17 @@ from typing import List
 _ADDITION = 1
 _MULTIPLY = 2
 _INPUT = 3
+_INPUT_203 = 203
 _OUTPUT = 4
+_OUTPUT_104 = 104
+_OUTPUT_204 = 204
 _JUMP_IF_TRUE = 5
 _JUMP_IF_FALSE = 6
 _LESS_THAN = 7
 _EQUAL_TO = 8
+_RELATIVE_BASE = 9
+_RELATIVE_BASE_109 = 109
+_RELATIVE_BASE_209 = 209
 _EXIT = 99
 
 
@@ -16,57 +22,61 @@ def program_as_list(program: str):
 
 
 class IntCodeComputer:
-    def __init__(self, program_data: str, auto_mode=False):
+
+    # class CommandAdd:
+    #     def run(self):
+    #        self.
+    #         pass
+
+    def __init__(self, program_data: str, auto_mode=False, grow_mode=False):
         self.program_list = [int(x) for x in program_data.split(',')]
         self.instruction_pointer = 0
         self._auto_mode = auto_mode
+        self._grow_mode = grow_mode
         self._input_buffer = []
         self.finished = False
         self.debug = False
         self.suspended = False
         self.debug_name = ""
+        self.relative_base = 0
+        self._output_buffer = None
+        self._output_buffer_history = []
+        if grow_mode:
+            self.program_list.extend([0] * (150 * len(self.program_list)))
 
-    def is_not_finished(self) -> bool:
-        return self.program_list[self.instruction_pointer] != _EXIT
-
-    def _get_current_with_offset(self, offset: int) -> int:
-        return self.program_list[self.instruction_pointer + offset]
-
-    def _get_position_or_immediate(self, offset: int, mask: str) -> int:
-        if mask == "0":  # position
-            return self._get_absolute(self.program_list[self.instruction_pointer + offset])
-        elif mask == "1":  # immediate
-            return self.program_list[self.instruction_pointer + offset]
-
-    def _get_current(self) -> int:
-        return self._get_current_with_offset(0)
-
-    def _get_absolute(self, offset: int) -> int:
+    def _get(self, offset: int) -> int:
         return self.program_list[offset]
 
-    def _get_current_as_string(self) -> str:
-        return str(self.program_list[self.instruction_pointer])
+    def _get_from_cursor(self, offset: int) -> int:
+        return self.program_list[self.instruction_pointer + offset]
 
-    def add_input(self, input_int):
-        self._input_buffer.append(input_int)
+    def _get_value_from_relative_base(self, offset: int) -> int:
+        return self._get(self.relative_base + self._get_from_cursor(offset))
+
+    def _get_address_of_relative_base(self, offset: int) -> int:
+        return self.relative_base + self._get_from_cursor(offset)
 
     def _get_input(self):
         return self._input_buffer.pop(0)
 
     def _set_output(self, output_value):
+        self._output_buffer_history.append(output_value)
         self._output_buffer = output_value
+
+    def is_not_finished(self) -> bool:
+        return self.program_list[self.instruction_pointer] != _EXIT
+
+    def add_input(self, input_int):
+        self._input_buffer.append(input_int)
 
     def get_output(self):
         return self._output_buffer
 
-    @staticmethod
-    def _parse_op_code(op_code: int) -> int:
-        return op_code % 10
 
     @staticmethod
     def _parse_op_code_mask(op_code: int) -> str:
         result = str(op_code)
-        if len(result) > 4:
+        if len(result) > 5:
             print("Big op-code found: %d " % op_code)
             exit(-1)
         if len(result) == 1:
@@ -75,48 +85,81 @@ class IntCodeComputer:
         result = result.rjust(3, "0")
         return result
 
-    def parse_frame(self):
-        op_code = self._get_current()
+    def _get_read_address(self, offset: int, mask: str) -> int:
+        if mask == "0":    # position
+            return self._get(self._get_from_cursor(offset))
+        elif mask == "1":  # immediate
+            return self._get_from_cursor(offset)
+        elif mask == "2":  # relative
+            return self._get_value_from_relative_base(offset)
 
-        if (op_code % 10) == _ADDITION or (op_code % 10) == _MULTIPLY:
+    def _get_write_address(self, offset, mask: str):
+        if mask == "0":
+            return self._get_from_cursor(offset)
+        elif mask == "2":
+            return self.relative_base + self._get_from_cursor(offset)
+        else:
+            print("Unexpected write address mask [%s] at instruction pointer [%d]", offset, self.instruction_pointer)
+            exit(-1)
+
+    def parse_frame(self):
+        op_code = self._get_from_cursor(0)
+
+        # if (op_code % 10) == _ADDITION or (op_code % 10) == _MULTIPLY:
+        if op_code in (22201, 21101, 21201, 2101, 1201, 1101, 1001, 101, 1, 21202, 22102, 21102, 2102, 1202, 1102, 1002, 102, 2):
             op_code_mask = self._parse_op_code_mask(op_code)
             result = {
                 "op_code": op_code % 10,
-                "op_code_mask": op_code_mask,
-                "param1": self._get_position_or_immediate(1, op_code_mask[2]),
-                "param2": self._get_position_or_immediate(2, op_code_mask[1]),
-                "param3": self._get_current_with_offset(3),
+                "param1": self._get_read_address(1, op_code_mask[2]),
+                "param2": self._get_read_address(2, op_code_mask[1]),
+                "address": self._get_write_address(3, op_code_mask[0])
             }
-        elif op_code == _INPUT:
-            result = {
-                "op_code": _INPUT,
-                "op_code_mask": "",
-                "param1": self._get_current_with_offset(1),
-            }
-        elif op_code in {_OUTPUT, 104}:
-            op_code_mask = self._parse_op_code_mask(op_code)
-            result = {
-                "op_code": _OUTPUT,
-                "op_code_mask": op_code_mask,
-                "param1": self._get_current_with_offset(1)
-            }
-        elif (op_code % 10) == _JUMP_IF_TRUE or (op_code % 10) == _JUMP_IF_FALSE:
+        elif (op_code % 10) == _INPUT:
+            result = {"op_code": _INPUT}
+            if op_code == _INPUT:
+                result["address"] = self._get_from_cursor(1)
+            elif op_code == _INPUT_203:
+                result["address"] = self._get_address_of_relative_base(1)
+            else:
+                print("unexpected op-code found [%d]" % op_code)
+                exit(-1)
+
+        elif (op_code % 10) == _OUTPUT:
+            result = {"op_code": _OUTPUT}
+            if op_code == _OUTPUT:
+                result["address"] = self._get_from_cursor(1)
+            elif op_code == _OUTPUT_204:
+                result["address"] = self._get_address_of_relative_base(1)
+            elif op_code == _OUTPUT_104:
+                result["value"] = self._get_from_cursor(1)
+            else:
+                print("unexpected op-code found [%d]" % op_code)
+                exit(-1)
+
+        # elif (op_code % 10) == _JUMP_IF_TRUE or (op_code % 10) == _JUMP_IF_FALSE:
+        elif op_code in (2105, 1205, 1105, 1005, 105, 5, 2106, 1206, 1106, 1006, 106, 6):
             op_code_mask = self._parse_op_code_mask(op_code)
             result = {
                 "op_code": op_code % 10,
-                "op_code_mask": op_code_mask,
-                "param1": self._get_position_or_immediate(1, op_code_mask[2]),
-                "param2": self._get_position_or_immediate(2, op_code_mask[1])
+                "param1": self._get_read_address(1, op_code_mask[2]),
+                "address": self._get_read_address(2, op_code_mask[1])
             }
         elif (op_code % 10) == _LESS_THAN or (op_code % 10) == _EQUAL_TO:
             op_code_mask = self._parse_op_code_mask(op_code)
             result = {
                 "op_code": op_code % 10,
-                "op_code_mask": op_code_mask,
-                "param1": self._get_position_or_immediate(1, op_code_mask[2]),
-                "param2": self._get_position_or_immediate(2, op_code_mask[1]),
-                "param3": self._get_current_with_offset(3)
+                "param1": self._get_read_address(1, op_code_mask[2]),
+                "param2": self._get_read_address(2, op_code_mask[1]),
+                "address": self._get_write_address(3, op_code_mask[0])
             }
+        elif (op_code % 10) == _RELATIVE_BASE:
+            result = {'op_code': (op_code % 10) }
+            if op_code == _RELATIVE_BASE:
+                result['offset'] = self.program_list[self._get_from_cursor(1)]
+            if op_code == _RELATIVE_BASE_109:
+                result['offset'] = self._get_from_cursor(1)
+            if op_code == _RELATIVE_BASE_209:
+                result['offset'] = self.program_list[self.relative_base + self._get_from_cursor(1)]
         else:
             print("unexpected op_code [%d] ptr = [%d]" % (op_code, self.instruction_pointer))
             exit(-1)
@@ -140,68 +183,72 @@ class IntCodeComputer:
             self.do_less_than(command)
         elif command["op_code"] == _EQUAL_TO:
             self.do_equal_to(command)
+        elif command["op_code"] == _RELATIVE_BASE:
+            self.do_relative_base(command)
         else:
             print("unexpected command op_code [%s]" % command)
             exit(-1)
 
     def do_addition(self, command):
-        self.program_list[command["param3"]] = command["param1"] + command["param2"]
+        self.program_list[command["address"]] = command["param1"] + command["param2"]
         self.instruction_pointer += 4
 
     def do_multiply(self, command):
-        self.program_list[command["param3"]] = command["param1"] * command["param2"]
+        self.program_list[command["address"]] = command["param1"] * command["param2"]
         self.instruction_pointer += 4
 
     def do_input(self, command):
 
         if self._auto_mode and not self._input_buffer:  # input buffer empty, go into suspend mode.
             self.suspended = True
+            return
 
-        elif self._auto_mode:
-            entered_value = self._get_input()
-            # if self.debug:
-            #     print("auto-mode value entered: [%d]" % entered_value)
-            self.program_list[command["param1"]] = int(entered_value)
-            self.instruction_pointer += 2
-        else:
-            entered_value = input("input a value: ")
-            self.program_list[command["param1"]] = int(entered_value)
-            self.instruction_pointer += 2
+        entered_value = self._get_input() if self._auto_mode else int(input("input a value: "))
+
+        self.program_list[command["address"]] = entered_value
+        self.instruction_pointer += 2
 
     def do_output(self, command):
-        output_value = self.program_list[command["param1"]]
-        # if self.debug:
-        #     print("output value: %d " % output_value)
+        if 'value' in command:
+            output_value = command['value']
+        elif 'address' in command:
+            output_value = self.program_list[command["address"]]
         self._set_output(output_value)
+
         self.instruction_pointer += 2
+
+        if not self._auto_mode:
+            print(output_value)
 
     def do_jump_if_true(self, command):
         if command["param1"]:
-            self.instruction_pointer = command["param2"]
+            self.instruction_pointer = command["address"]
         else:
             self.instruction_pointer += 3
 
     def do_jump_if_false(self, command):  # refactor to use do_jump_if_false ? DRY or WET??
         if command["param1"] == 0:
-            self.instruction_pointer = command["param2"]
+            self.instruction_pointer = command["address"]
         else:
             self.instruction_pointer += 3
 
-    def do_less_than(self, command):
-        if command["param1"] < command["param2"]:  # less than = true
-            self.program_list[command["param3"]] = 1
-        else:
-            self.program_list[command["param3"]] = 0
+    def _set(self, offset: int, value: int ):
+        self.program_list[offset] = value
 
+    def do_less_than(self, command):
+        value = 1 if command["param1"] < command["param2"] else 0
+        self._set(command["address"], value)
         self.instruction_pointer += 4
 
     def do_equal_to(self, command):
-        if command["param1"] == command["param2"]:
-            self.program_list[command["param3"]] = 1
-        else:
-            self.program_list[command["param3"]] = 0
-
+        value = 1 if command["param1"] == command["param2"] else 0
+        self._set(command["address"], value)
         self.instruction_pointer += 4
+
+    def do_relative_base(self, command):
+        self.relative_base += command["offset"]
+
+        self.instruction_pointer += 2
 
     def resume(self):
         self.suspended = False
