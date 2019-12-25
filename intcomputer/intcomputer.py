@@ -61,13 +61,20 @@ class IntCodeComputer:
 
     def _set_output(self, output_value):
         self._output_buffer_history.append(output_value)
+        self._output_buffer_previous = self._output_buffer
         self._output_buffer = output_value
+
+    def get_output_history(self):
+        return self._output_buffer_history
 
     def is_not_finished(self) -> bool:
         return self.program_list[self.instruction_pointer] != _EXIT
 
     def add_input(self, input_int):
         self._input_buffer.append(input_int)
+
+    def get_output_previous(self):
+        return self._output_buffer_previous
 
     def get_output(self):
         return self._output_buffer
@@ -105,8 +112,9 @@ class IntCodeComputer:
     def parse_frame(self):
         op_code = self._get_from_cursor(0)
 
-        # if (op_code % 10) == _ADDITION or (op_code % 10) == _MULTIPLY:
-        if op_code in (22201, 21101, 21201, 2101, 1201, 1101, 1001, 101, 1, 21202, 22102, 21102, 2102, 1202, 1102, 1002, 102, 2):
+        # if op_code in (22201, 22101, 21101, 21201, 20201, 20101, 20001, 2101, 1201, 1101, 1001, 201, 101, 1, 22202, 21202, 22102,
+        #                21102, 20102, 2102, 1202, 1102, 1002, 102, 2):
+        if (op_code % 10) == _ADDITION or (op_code % 10) == _MULTIPLY:
             op_code_mask = self._parse_op_code_mask(op_code)
             result = {
                 "op_code": op_code % 10,
@@ -168,13 +176,13 @@ class IntCodeComputer:
 
     def run_command(self, command: dict):
         if command["op_code"] == _ADDITION:
-            self.do_addition(command)
+            self._do_addition(command)
         elif command["op_code"] == _MULTIPLY:
-            self.do_multiply(command)
+            self._do_multiply(command)
         elif command["op_code"] == _INPUT:
-            self.do_input(command)
+            self._do_input(command)
         elif command["op_code"] == _OUTPUT:
-            self.do_output(command)
+            self._do_output(command)
         elif command["op_code"] == _JUMP_IF_TRUE:
             self.do_jump_if_true(command)
         elif command["op_code"] == _JUMP_IF_FALSE:
@@ -189,15 +197,15 @@ class IntCodeComputer:
             print("unexpected command op_code [%s]" % command)
             exit(-1)
 
-    def do_addition(self, command):
+    def _do_addition(self, command):
         self.program_list[command["address"]] = command["param1"] + command["param2"]
         self.instruction_pointer += 4
 
-    def do_multiply(self, command):
+    def _do_multiply(self, command):
         self.program_list[command["address"]] = command["param1"] * command["param2"]
         self.instruction_pointer += 4
 
-    def do_input(self, command):
+    def _do_input(self, command):
 
         if self._auto_mode and not self._input_buffer:  # input buffer empty, go into suspend mode.
             self.suspended = True
@@ -208,7 +216,7 @@ class IntCodeComputer:
         self.program_list[command["address"]] = entered_value
         self.instruction_pointer += 2
 
-    def do_output(self, command):
+    def _do_output(self, command):
         if 'value' in command:
             output_value = command['value']
         elif 'address' in command:
